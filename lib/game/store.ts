@@ -129,7 +129,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setPhase: (p) => set({ phase: p }),
 
   settings: {
-    brightness: 2.5,
+    brightness: 1.0,
     audioEnabled: true,
     masterVolume: 0.8,
     sfxVolume: 0.9,

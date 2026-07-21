@@ -82,24 +82,20 @@ export function Zombie({ id, fixed = false }: ZombieProps) {
         mats.forEach((m) => {
           const mat = m as THREE.MeshStandardMaterial;
           if (mat && (mat.isMeshStandardMaterial || (mat as THREE.MeshPhysicalMaterial).isMeshPhysicalMaterial)) {
-            // Keep the GLB texture (has clothing/skin details) but fix the alpha channel
-            // that causes transparency. Force opaque rendering:
-            // - transparent=false disables alpha blending
-            // - alphaTest=0 means no fragments are discarded for alpha
-            // - opacity=1 ensures full opacity
-            // - DoubleSide prevents see-through from backface culling
-            // - Brighten the texture via color multiplier + emissive for visibility
+            // Display the GLB texture at its TRUE colors (no over-brightening).
+            // Force opaque rendering to avoid alpha-blend artifacts:
             mat.metalness = 0;
-            mat.roughness = 0.85;
+            mat.roughness = 0.9;
             mat.transparent = false;
             mat.opacity = 1;
             mat.alphaTest = 0;
             mat.side = THREE.DoubleSide;
             mat.depthWrite = true;
-            // Brighten the texture (color multiplies the map; >1 brightens)
-            mat.color = new THREE.Color(2.0, 2.2, 1.7);
-            mat.emissive = new THREE.Color(0x1a2a0a);
-            mat.emissiveIntensity = 0.8;
+            // White multiplier = texture shows at original color values
+            mat.color = new THREE.Color(1.0, 1.0, 1.0);
+            // No emissive in resting state (hit flash will set it temporarily)
+            mat.emissive = new THREE.Color(0x000000);
+            mat.emissiveIntensity = 0;
             mat.needsUpdate = true;
             hitFlashMat.current = mat;
           }
@@ -186,15 +182,16 @@ export function Zombie({ id, fixed = false }: ZombieProps) {
     const z = st.zombies.get(id);
     if (!z || !groupRef.current) return;
 
-    // ---- HIT FLASH (preserve base emissive, flash red briefly on hit) ----
+    // ---- HIT FLASH (flash red briefly on hit, otherwise no emissive) ----
     if (hitFlashMat.current) {
       const flashAge = (performance.now() - z.hitFlash) / 1000;
       if (z.hitFlash > 0 && flashAge < 0.12) {
         hitFlashMat.current.emissive.setRGB(0.9 - flashAge * 6, 0.1, 0.1);
-        hitFlashMat.current.emissiveIntensity = 2;
+        hitFlashMat.current.emissiveIntensity = 1.5;
       } else {
-        hitFlashMat.current.emissive.setRGB(0.1, 0.16, 0.04);
-        hitFlashMat.current.emissiveIntensity = 0.6;
+        // No emissive when not being hit — show true texture colors
+        hitFlashMat.current.emissive.setRGB(0, 0, 0);
+        hitFlashMat.current.emissiveIntensity = 0;
       }
     }
 
